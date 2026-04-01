@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Solar Lead Generator</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --green: #1D9E75; --green-dark: #0F6E56; --green-light: #E1F5EE;
+    --text: #1a1a1a; --text-muted: #666; --text-hint: #999;
+    --bg: #fff; --bg-surface: #f7f7f5; --border: rgba(0,0,0,0.12);
+    --radius: 12px; --radius-sm: 8px;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f0efec; color: var(--text); min-height: 100vh;
+    display: flex; align-items: flex-start; justify-content: center; padding: 2rem 1rem; }
+  .wrap { width: 100%; max-width: 640px; }
+  .brand { text-align: center; margin-bottom: 2rem; }
+  .brand .logo { display: inline-flex; align-items: center; gap: 10px; }
+  .brand .logo-icon { width: 36px; height: 36px; background: var(--green); border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; }
+  .brand .logo-icon svg { width: 20px; height: 20px; stroke: #fff; fill: none;
+    stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .brand h1 { font-size: 18px; font-weight: 600; color: var(--text); }
+  .brand p { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+  .progress-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .step-dot { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center; font-size: 12px;
+    font-weight: 500; color: var(--text-muted); background: var(--bg); transition: all 0.2s; flex-shrink: 0; }
+  .step-dot.active { background: var(--green); border-color: var(--green); color: #fff; }
+  .step-dot.done { background: var(--green); border-color: var(--green); color: #fff; }
+  .step-line { flex: 1; height: 1px; background: var(--border); transition: background 0.3s; }
+  .step-line.done { background: var(--green); }
+  .progress-labels { display: flex; justify-content: space-between; margin-bottom: 1.5rem; }
+  .step-label { font-size: 11px; color: var(--text-hint); }
+  .step-label.active { color: var(--green); font-weight: 500; }
+  .card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 1.5rem; margin-bottom: 1rem; }
+  .card h2 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+  .card > p { font-size: 13px; color: var(--text-muted); margin-bottom: 1.25rem; line-height: 1.5; }
+  .field { margin-bottom: 1rem; }
+  .field label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; font-weight: 500; }
+  .field input, .field select, .field textarea {
+    width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    font-size: 14px; color: var(--text); background: var(--bg); outline: none;
+    transition: border-color 0.15s; font-family: inherit; }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--green); }
+  .field textarea { height: 80px; resize: vertical; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .option-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .option-btn { border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 10px 12px; background: var(--bg); cursor: pointer; text-align: left;
+    font-size: 13px; color: var(--text); transition: all 0.15s; font-family: inherit; }
+  .option-btn:hover { background: var(--bg-surface); }
+  .option-btn.selected { border-color: var(--green); background: var(--green-light); color: var(--green-dark); font-weight: 500; }
+  .actions { display: flex; gap: 10px; margin-top: 1.5rem; }
+  .btn-primary { background: var(--green); color: #fff; border: none; padding: 10px 24px;
+    border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; cursor: pointer; flex: 1;
+    transition: background 0.15s; font-family: inherit; }
+  .btn-primary:hover { background: var(--green-dark); }
+  .btn-primary:disabled { background: #aaa; cursor: not-allowed; }
+  .btn-back { background: transparent; color: var(--text-muted); border: 1px solid var(--border);
+    padding: 10px 20px; border-radius: var(--radius-sm); font-size: 14px; cursor: pointer; font-family: inherit; }
+  .btn-back:hover { background: var(--bg-surface); }
+  .error { font-size: 12px; color: #993C1D; margin-top: 4px; display: none; }
+  .agent-card { background: var(--bg-surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1.25rem; margin-top: 1rem; }
+  .agent-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
+    font-size: 13px; color: var(--text-muted); }
+  .agent-icon { width: 20px; height: 20px; border-radius: 50%; background: var(--green-light);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .agent-icon svg { width: 11px; height: 11px; stroke: var(--green-dark); fill: none;
+    stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+  .thinking { display: flex; align-items: center; gap: 10px; font-size: 13px;
+    color: var(--text-muted); padding: 8px 0 14px; }
+  .dot-anim { display: flex; gap: 4px; }
+  .dot-anim span { width: 6px; height: 6px; border-radius: 50%; background: var(--green);
+    animation: bounce 1.2s infinite; }
+  .dot-anim span:nth-child(2) { animation-delay: 0.2s; }
+  .dot-anim span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-6px)} }
+  .score-badge { display: inline-flex; align-items: center; padding: 4px 12px;
+    border-radius: 999px; font-size: 12px; font-weight: 600; }
+  .score-hot { background: #FAECE7; color: #993C1D; }
+  .score-warm { background: #FAEEDA; color: #854F0B; }
+  .score-cold { background: #E6F1FB; color: #185FA5; }
+  .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 1rem 0; }
+  .metric { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; }
+  .metric .label { font-size: 11px; color: var(--text-hint); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .metric .value { font-size: 15px; font-weight: 600; }
+  .tag { display: inline-block; background: var(--green-light); color: var(--green-dark);
+    font-size: 11px; padding: 2px 8px; border-radius: 999px; margin: 2px; font-weight: 500; }
+  .divider { height: 1px; background: var(--border); margin: 1rem 0; }
+  .engineer-card { background: var(--bg); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1.25rem; }
+  .engineer-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; gap: 10px; }
+  .engineer-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--green-light);
+    display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: var(--green-dark); flex-shrink: 0; }
+  .field-row { display: flex; justify-content: space-between; align-items: flex-start;
+    padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px; gap: 12px; }
+  .field-row:last-child { border-bottom: none; }
+  .field-key { color: var(--text-muted); flex-shrink: 0; }
+  .field-val { color: var(--text); font-weight: 500; text-align: right; }
+  .copy-btn { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%;
+    background: transparent; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 9px 14px; font-size: 13px; color: var(--text-muted); cursor: pointer;
+    margin-top: 1rem; font-family: inherit; transition: background 0.15s; }
+  .copy-btn:hover { background: var(--bg-surface); }
+  .success-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
+    background: var(--green-light); color: var(--green-dark); border-radius: 999px;
+    font-size: 12px; font-weight: 500; margin-left: auto; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>
+      </div>
+      <div>
+        <h1>Solar Lead Generator</h1>
+        <p>AI-powered lead qualification for solar engineers</p>
+      </div>
+    </div>
+  </div>
+  <div id="app"></div>
+</div>
+
+<script>
+const state = {
+  step: 1, totalSteps: 5,
+  data: {}, roofOptions: [], goalOptions: [],
+  loading: false, result: null, savedId: null
+};
+
+const stepLabels = ['Contact', 'Property', 'Energy', 'Goals', 'Summary'];
+
+function el(id) { return document.getElementById(id); }
+
+function toggleOption(arr, val, group) {
+  const idx = arr.indexOf(val);
+  if (idx > -1) arr.splice(idx, 1); else arr.push(val);
+  document.querySelectorAll(`[data-group="${group}"]`).forEach(b =>
+    b.classList.toggle('selected', arr.includes(b.dataset.val)));
+}
+
+function selectSingle(key, val, group) {
+  state.data[key] = val;
+  document.querySelectorAll(`[data-group="${group}"]`).forEach(b =>
+    b.classList.toggle('selected', b.dataset.val === val));
+}
+
+function progressHTML() {
+  let dots = '', labels = '';
+  for (let i = 1; i <= state.totalSteps; i++) {
+    const cls = i < state.step ? 'done' : i === state.step ? 'active' : '';
+    const lc = i < state.step ? 'done' : '';
+    dots += `<div class="step-dot ${cls}">${i < state.step ? '&#10003;' : i}</div>`;
+    if (i < state.totalSteps) dots += `<div class="step-line ${lc}"></div>`;
+    labels += `<span class="step-label${i === state.step ? ' active' : ''}">${stepLabels[i-1]}</span>`;
+  }
+  return `<div class="progress-bar">${dots}</div><div class="progress-labels">${labels}</div>`;
+}
+
+// ── Steps ────────────────────────────────────────────────────────────────────
+function step1HTML() {
+  return `${progressHTML()}
+<div class="card">
+  <h2>Contact information</h2>
+  <p>Let's start with the basics so our solar engineers can reach you.</p>
+  <div class="grid2">
+    <div class="field"><label>First name</label><input id="fname" placeholder="Sarah" value="${state.data.fname||''}"></div>
+    <div class="field"><label>Last name</label><input id="lname" placeholder="Johnson" value="${state.data.lname||''}"></div>
+  </div>
+  <div class="field"><label>Email address</label><input id="email" type="email" placeholder="sarah@example.com" value="${state.data.email||''}"></div>
+  <div class="field"><label>Phone number</label><input id="phone" type="tel" placeholder="+27 82 000 0000" value="${state.data.phone||''}"></div>
+  <div id="err1" class="error">Please fill in all fields.</div>
+  <div class="actions"><button class="btn-primary" onclick="next1()">Continue &rarr;</button></div>
+</div>`;
+}
+
+function next1() {
+  const f=el('fname').value.trim(),l=el('lname').value.trim(),e=el('email').value.trim(),p=el('phone').value.trim();
+  if (!f||!l||!e||!p) { el('err1').style.display='block'; return; }
+  Object.assign(state.data, {fname:f,lname:l,email:e,phone:p});
+  state.step=2; render();
+}
+
+function step2HTML() {
+  const roofTypes=['Flat concrete','Pitched tile','IBR / Chromadek','Thatch'];
+  const orientations=['North-facing','East/West','South-facing','Unsure'];
+  return `${progressHTML()}
+<div class="card">
+  <h2>Property details</h2>
+  <p>Help our engineers understand your installation site.</p>
+  <div class="field"><label>Property address</label><input id="address" placeholder="123 Solar Street, Sandton" value="${state.data.address||''}"></div>
+  <div class="field"><label>Roof type <span style="color:var(--text-hint);font-weight:400;">(select all that apply)</span></label>
+    <div class="option-grid">${roofTypes.map(r=>`<button class="option-btn${state.roofOptions.includes(r)?' selected':''}" data-group="roof" data-val="${r}" onclick="toggleOption(state.roofOptions,'${r}','roof')">${r}</button>`).join('')}</div>
+  </div>
+  <div class="field"><label>Roof orientation</label>
+    <div class="option-grid">${orientations.map(o=>`<button class="option-btn${state.data.orientation===o?' selected':''}" data-group="orient" data-val="${o}" onclick="selectSingle('orientation','${o}','orient')">${o}</button>`).join('')}</div>
+  </div>
+  <div class="field"><label>Approximate roof area (m²)</label><input id="roofarea" type="number" placeholder="80" value="${state.data.roofArea||''}"></div>
+  <div id="err2" class="error">Please fill in address and select orientation.</div>
+  <div class="actions">
+    <button class="btn-back" onclick="state.step=1;render()">Back</button>
+    <button class="btn-primary" onclick="next2()">Continue &rarr;</button>
+  </div>
+</div>`;
+}
+
+function next2() {
+  const a=el('address').value.trim(),r=el('roofarea').value;
+  if (!a||!state.data.orientation) { el('err2').style.display='block'; return; }
+  Object.assign(state.data,{address:a,roofArea:r,roofTypes:[...state.roofOptions]});
+  state.step=3; render();
+}
+
+function step3HTML() {
+  const bills=['< R1,000','R1,000–R2,500','R2,500–R5,000','R5,000+'];
+  const usage=['Low (< 500 kWh/mo)','Medium (500–1,000)','High (1,000–2,000)','Very high (2,000+)'];
+  return `${progressHTML()}
+<div class="card">
+  <h2>Energy usage</h2>
+  <p>This helps size the system correctly for your property.</p>
+  <div class="field"><label>Monthly electricity bill</label>
+    <div class="option-grid">${bills.map(b=>`<button class="option-btn${state.data.bill===b?' selected':''}" data-group="bill" data-val="${b}" onclick="selectSingle('bill','${b}','bill')">${b}</button>`).join('')}</div>
+  </div>
+  <div class="field"><label>Estimated monthly usage</label>
+    <div class="option-grid">${usage.map(u=>`<button class="option-btn${state.data.usage===u?' selected':''}" data-group="usage" data-val="${u}" onclick="selectSingle('usage','${u}','usage')">${u}</button>`).join('')}</div>
+  </div>
+  <div class="field"><label>Current energy provider</label><input id="provider" placeholder="Eskom / City Power / etc." value="${state.data.provider||''}"></div>
+  <div id="err3" class="error">Please select your bill range and usage.</div>
+  <div class="actions">
+    <button class="btn-back" onclick="state.step=2;render()">Back</button>
+    <button class="btn-primary" onclick="next3()">Continue &rarr;</button>
+  </div>
+</div>`;
+}
+
+function next3() {
+  if (!state.data.bill||!state.data.usage) { el('err3').style.display='block'; return; }
+  state.data.provider=el('provider').value.trim();
+  state.step=4; render();
+}
+
+function step4HTML() {
+  const goals=['Reduce electricity bill','Full off-grid','Backup power only','EV charging','Water heating','Business continuity'];
+  const timelines=['ASAP','1–3 months','3–6 months','6–12 months'];
+  return `${progressHTML()}
+<div class="card">
+  <h2>Goals & timeline</h2>
+  <p>What are you hoping to achieve with solar?</p>
+  <div class="field"><label>Select your goals <span style="color:var(--text-hint);font-weight:400;">(all that apply)</span></label>
+    <div class="option-grid">${goals.map(g=>`<button class="option-btn${state.goalOptions.includes(g)?' selected':''}" data-group="goals" data-val="${g}" onclick="toggleOption(state.goalOptions,'${g}','goals')">${g}</button>`).join('')}</div>
+  </div>
+  <div class="field"><label>Installation timeline</label>
+    <div class="option-grid">${timelines.map(t=>`<button class="option-btn${state.data.timeline===t?' selected':''}" data-group="tl" data-val="${t}" onclick="selectSingle('timeline','${t}','tl')">${t}</button>`).join('')}</div>
+  </div>
+  <div class="field"><label>Additional notes for the engineer <span style="color:var(--text-hint);font-weight:400;">(optional)</span></label>
+    <textarea id="notes" placeholder="e.g. we have a pool pump, load shedding affects us 6+ hours daily...">${state.data.notes||''}</textarea>
+  </div>
+  <div id="err4" class="error">Please select at least one goal and a timeline.</div>
+  <div class="actions">
+    <button class="btn-back" onclick="state.step=3;render()">Back</button>
+    <button class="btn-primary" onclick="next4()">Analyse lead &rarr;</button>
+  </div>
+</div>`;
+}
+
+function next4() {
+  if (!state.goalOptions.length||!state.data.timeline) { el('err4').style.display='block'; return; }
+  state.data.goals=[...state.goalOptions];
+  state.data.notes=el('notes').value.trim();
+  state.step=5; state.loading=true; render();
+  submitLead();
+}
+
+// ── API call ─────────────────────────────────────────────────────────────────
+async function submitLead() {
+  try {
+    const res = await fetch('/api/leads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(state.data)
+    });
+    const json = await res.json();
+    if (!json.success) throw new Error(json.error || 'Unknown error');
+    state.result = json.ai;
+    state.savedId = json.lead?.id;
+  } catch(err) {
+    console.error(err);
+    state.result = { error: err.message };
+  }
+  state.loading = false;
+  render();
+}
+
+// ── Step 5 ───────────────────────────────────────────────────────────────────
+function tierClass(tier) {
+  return tier==='Hot'?'score-hot':tier==='Warm'?'score-warm':'score-cold';
+}
+
+function step5HTML() {
+  const d = state.data;
+  const r = state.result;
+
+  let agentSection = '';
+  if (state.loading) {
+    agentSection = `
+<div class="agent-card">
+  <div class="thinking"><div class="dot-anim"><span></span><span></span><span></span></div>Agent is analysing your lead...</div>
+  <div class="agent-row"><div class="agent-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>Scoring energy profile against solar viability</div>
+  <div class="agent-row"><div class="agent-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>Estimating system size and component count</div>
+  <div class="agent-row"><div class="agent-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>Generating engineer brief and saving to database</div>
+</div>`;
+  } else if (r?.error) {
+    agentSection = `<div class="agent-card" style="border-color:#FAECE7;background:#fff9f8;"><p style="font-size:13px;color:#993C1D;">AI analysis failed: ${r.error}. Lead data has been saved.</p></div>`;
+  } else if (r) {
+    const tags = (r.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('');
+    agentSection = `
+<div class="engineer-card">
+  <div class="engineer-header">
+    <div class="engineer-avatar">SE</div>
+    <div>
+      <div style="font-size:14px;font-weight:600;">Engineer brief</div>
+      <div style="font-size:12px;color:var(--text-muted);">AI-generated · saved to database · email sent</div>
+    </div>
+    <span class="score-badge ${tierClass(r.tier)}" style="margin-left:auto;">${r.tier} &nbsp; ${r.score}/100</span>
+  </div>
+  <div class="result-grid">
+    <div class="metric"><div class="label">System size</div><div class="value">${r.estimatedSystemSize}</div></div>
+    <div class="metric"><div class="label">Panels</div><div class="value">${r.estimatedPanels} panels</div></div>
+    <div class="metric"><div class="label">Battery storage</div><div class="value">${r.estimatedBatteries}</div></div>
+    <div class="metric"><div class="label">Est. ROI</div><div class="value">${r.estimatedROI}</div></div>
+  </div>
+  <div class="divider"></div>
+  <p style="font-size:13px;color:var(--text-muted);line-height:1.65;margin-bottom:10px;">${r.engineerNotes}</p>
+  <div>${tags}</div>
+  <button class="copy-btn" onclick="copyBrief()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+    <span id="copy-label">Copy engineer brief</span>
+  </button>
+</div>`;
+  }
+
+  return `${progressHTML()}
+<div class="card">
+  <h2>Lead captured</h2>
+  <p>Saved to your database. AI brief sent to your engineering team.</p>
+  <div class="field-row"><span class="field-key">Name</span><span class="field-val">${d.fname} ${d.lname}</span></div>
+  <div class="field-row"><span class="field-key">Contact</span><span class="field-val">${d.email} &middot; ${d.phone}</span></div>
+  <div class="field-row"><span class="field-key">Address</span><span class="field-val">${d.address}</span></div>
+  <div class="field-row"><span class="field-key">Monthly bill</span><span class="field-val">${d.bill}</span></div>
+  <div class="field-row"><span class="field-key">Goals</span><span class="field-val">${(d.goals||[]).join(', ')}</span></div>
+  <div class="field-row"><span class="field-key">Timeline</span><span class="field-val">${d.timeline}</span></div>
+</div>
+${agentSection}
+<div class="actions" style="margin-top:1rem;">
+  <button class="btn-back" onclick="state.step=4;render()">Edit</button>
+  <button class="btn-primary" onclick="startOver()">Submit another lead</button>
+</div>`;
+}
+
+function copyBrief() {
+  const d=state.data, r=state.result;
+  if (!r) return;
+  const text=`SOLAR LEAD BRIEF\n\nClient: ${d.fname} ${d.lname}\nEmail: ${d.email} | Phone: ${d.phone}\nAddress: ${d.address}\n\nLEAD SCORE: ${r.score}/100 (${r.tier})\nPriority: ${r.priority}\n\nSYSTEM ESTIMATE\nSize: ${r.estimatedSystemSize}\nPanels: ${r.estimatedPanels}\nBattery: ${r.estimatedBatteries}\nEst. ROI: ${r.estimatedROI}\n\nENGINEER NOTES\n${r.engineerNotes}\n\nTags: ${(r.tags||[]).join(', ')}\n\nENERGY PROFILE\nBill: ${d.bill} | Usage: ${d.usage} | Provider: ${d.provider||'N/A'}\nRoof: ${(d.roofTypes||[]).join(', ')||'N/A'} | Orientation: ${d.orientation} | Area: ${d.roofArea||'N/A'}m²\nGoals: ${(d.goals||[]).join(', ')}\nTimeline: ${d.timeline}\nNotes: ${d.notes||'None'}`;
+  navigator.clipboard.writeText(text).then(()=>{
+    el('copy-label').textContent='Copied!';
+    setTimeout(()=>{ if(el('copy-label')) el('copy-label').textContent='Copy engineer brief'; },2000);
+  });
+}
+
+function startOver() {
+  state.step=1; state.data={}; state.roofOptions=[]; state.goalOptions=[];
+  state.result=null; state.loading=false; state.savedId=null; render();
+}
+
+function render() {
+  const views={1:step1HTML,2:step2HTML,3:step3HTML,4:step4HTML,5:step5HTML};
+  el('app').innerHTML=views[state.step]();
+}
+
+render();
+</script>
+</body>
+</html>
