@@ -385,6 +385,37 @@ function render() {
 }
  
 render();
+
+ <!-- 
+  Privacy Policy Notice
+  This block adds a short notice under your form buttons, linking to your Privacy Policy page.
+-->
+<div class="privacy-notice">
+  <p>
+    <!-- 
+      Inform users that by proceeding they consent to your Privacy Policy.
+      The <a> tag links to your dedicated privacy.html page.
+      target="_blank" ensures the policy opens in a new tab so users don't leave the form.
+    -->
+    By proceeding, you agree to our 
+    <a href="privacy.html" target="_blank">Privacy Policy</a>.
+  </p>
+</div>
+
+<!-- CSS styling for the privacy notice -->
+<style>
+.privacy-notice {
+  margin-top: 15px;          /* space above the notice so it doesn’t crowd the button */
+  font-size: 13px;            /* smaller text to be unobtrusive but readable */
+  color: #555;                /* neutral gray text color */
+  text-align: center;         /* center aligns the text below the form button */
+}
+
+.privacy-notice a {
+  color: #32CD32;             /* lime green link color for emphasis */
+  text-decoration: underline; /* underline makes it look like a clickable link */
+}
+</style>
 </script>
 </body>
 </html>
